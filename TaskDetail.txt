@@ -1,0 +1,883 @@
+import { useState } from "react";
+
+const sections = {
+  overview: {
+    label: "What You're Building",
+    icon: "🧠",
+    color: "#6EE7B7",
+    content: {
+      title: "Second Brain — PKM App",
+      description:
+        "A full-stack app where users save anything from the internet (articles, tweets, videos, PDFs, images), and the system automatically organizes, clusters, and resurfaces that content using AI tagging, semantic search, and a knowledge graph.",
+      pillars: [
+        {
+          name: "Save Layer",
+          desc: "Browser extension or URL paste → scrapes & stores content",
+          icon: "📥",
+        },
+        {
+          name: "Organize Layer",
+          desc: "AI auto-tags, clusters by topic, builds knowledge graph",
+          icon: "🗂️",
+        },
+        {
+          name: "Resurface Layer",
+          desc: "Spaced repetition, related items, memory nudges",
+          icon: "🔁",
+        },
+        {
+          name: "Search Layer",
+          desc: "Semantic search via vector embeddings — not just keyword",
+          icon: "🔍",
+        },
+      ],
+    },
+  },
+  stack: {
+    label: "Tech Stack",
+    icon: "⚙️",
+    color: "#93C5FD",
+    content: {
+      categories: [
+        {
+          name: "Frontend",
+          color: "#34D399",
+          items: [
+            {
+              tech: "React + Vite",
+              role: "UI Framework",
+              why: "You already know it. Fast HMR, great DX.",
+              use: "All pages: dashboard, graph view, search, collections",
+            },
+            {
+              tech: "D3.js",
+              role: "Graph Visualization",
+              why: "Most powerful data viz library. Used in Obsidian graph view.",
+              use: "Force-directed graph of knowledge connections",
+            },
+            {
+              tech: "TailwindCSS",
+              role: "Styling",
+              why: "Fast utility-first CSS",
+              use: "All component styling",
+            },
+            {
+              tech: "Redux Toolkit",
+              role: "State Management",
+              why: "Familiar from CineVerse",
+              use: "Auth state, saved items, search results",
+            },
+            {
+              tech: "React Query (TanStack)",
+              role: "Server State",
+              why: "Caching, background refetch, optimistic updates",
+              use: "Fetching items, tags, graph data from backend",
+            },
+          ],
+        },
+        {
+          name: "Backend",
+          color: "#60A5FA",
+          items: [
+            {
+              tech: "Node.js + Express",
+              role: "Primary API Server",
+              why: "You know this well. Handles auth, CRUD, routing.",
+              use: "REST API for items, collections, tags, users",
+            },
+            {
+              tech: "MongoDB + Mongoose",
+              role: "Primary Database",
+              why: "Familiar. Flexible schema = perfect for mixed content types.",
+              use: "Storing items, metadata, tags, user data",
+            },
+            {
+              tech: "JWT + Cookies",
+              role: "Auth",
+              why: "Same as CineVerse — you already built this",
+              use: "Secure auth across frontend + backend",
+            },
+            {
+              tech: "Cheerio / Puppeteer",
+              role: "Web Scraper",
+              why: "Extracts title, text, OG image from any URL",
+              use: "When user pastes a URL, server scrapes the metadata",
+            },
+            {
+              tech: "Bull + Redis",
+              role: "Queue Workers",
+              why: "For async AI tasks that shouldn't block API response",
+              use: "Queue: embed content, auto-tag, cluster — runs in background",
+            },
+          ],
+        },
+        {
+          name: "AI / ML Layer",
+          color: "#F9A8D4",
+          items: [
+            {
+              tech: "OpenAI API (text-embedding-3-small)",
+              role: "Embeddings Generator",
+              why: "Converts text to vectors for semantic search",
+              use: "Every saved item gets embedded on save",
+            },
+            {
+              tech: "OpenAI GPT-4o-mini",
+              role: "Auto-Tagger + Summarizer",
+              why: "Cheap, fast, good enough for tagging",
+              use: "Generate tags, short summaries, topic labels",
+            },
+            {
+              tech: "MongoDB Atlas Vector Search",
+              role: "Vector DB",
+              why: "Already using MongoDB — no separate DB needed",
+              use: "Semantic search across all saved items",
+            },
+          ],
+        },
+        {
+          name: "Infrastructure",
+          color: "#FCD34D",
+          items: [
+            {
+              tech: "Cloudinary",
+              role: "Object Storage",
+              why: "Easy image/file upload — free tier good enough",
+              use: "Store scraped OG images, PDF thumbnails",
+            },
+            {
+              tech: "Redis (Upstash — free)",
+              role: "Cache + Queue",
+              why: "Bull queue needs Redis. Upstash = serverless Redis.",
+              use: "BullMQ job queue for background AI processing",
+            },
+            {
+              tech: "Render",
+              role: "Deployment",
+              why: "You already deployed CineVerse on Render",
+              use: "Deploy backend API + frontend",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  structure: {
+    label: "Folder Structure",
+    icon: "📁",
+    color: "#FCA5A5",
+    content: {
+      client: `client/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── ui/           ← reusable (Button, Card, Modal)
+│   │   ├── layout/       ← Navbar, Sidebar, Layout
+│   │   ├── items/        ← SavedItemCard, ItemDetail
+│   │   ├── graph/        ← KnowledgeGraph (D3)
+│   │   └── search/       ← SearchBar, SearchResults
+│   ├── pages/
+│   │   ├── Dashboard.jsx
+│   │   ├── SavedItems.jsx
+│   │   ├── GraphView.jsx
+│   │   ├── Collections.jsx
+│   │   └── Search.jsx
+│   ├── services/
+│   │   └── api.js        ← axios instance + all API calls
+│   ├── store/
+│   │   ├── authSlice.js
+│   │   └── itemsSlice.js
+│   └── hooks/
+│       └── useGraph.js   ← D3 graph logic`,
+      server: `server/
+├── src/
+│   ├── config/
+│   │   ├── db.js         ← MongoDB connect
+│   │   └── redis.js      ← Redis/Upstash connect
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Item.js       ← Main model (article/tweet/video/pdf)
+│   │   ├── Tag.js
+│   │   └── Collection.js
+│   ├── controllers/
+│   │   ├── auth.controller.js
+│   │   ├── item.controller.js
+│   │   ├── search.controller.js
+│   │   └── graph.controller.js
+│   ├── routes/
+│   │   ├── auth.routes.js
+│   │   ├── items.routes.js
+│   │   └── search.routes.js
+│   ├── services/
+│   │   ├── scraper.service.js    ← Cheerio/Puppeteer
+│   │   ├── embedding.service.js  ← OpenAI embeddings
+│   │   ├── tagger.service.js     ← GPT auto-tag
+│   │   └── graph.service.js      ← Build graph nodes/edges
+│   ├── workers/
+│   │   └── aiProcessor.worker.js ← Bull queue consumer
+│   ├── middleware/
+│   │   └── auth.middleware.js
+│   └── index.js`,
+    },
+  },
+  phases: {
+    label: "Build Phases",
+    icon: "🗺️",
+    color: "#C4B5FD",
+    content: {
+      phases: [
+        {
+          num: "01",
+          name: "Auth + Base Setup",
+          est: "3-4 days",
+          color: "#6EE7B7",
+          steps: [
+            "npx create-react-app client --template vite (or use Vite directly)",
+            "mkdir server && cd server && npm init -y",
+            "Install: express mongoose dotenv cors bcryptjs jsonwebtoken cookie-parser",
+            "Build User model, register/login routes, JWT middleware",
+            "Build React auth pages — same pattern as CineVerse",
+            "Set up Redux store with authSlice",
+          ],
+        },
+        {
+          num: "02",
+          name: "Save System (Core Feature)",
+          est: "4-5 days",
+          color: "#93C5FD",
+          steps: [
+            "Build Item model: { url, type, title, description, ogImage, rawText, tags, embedding, userId, createdAt }",
+            "Install cheerio: npm i cheerio axios — for scraping metadata from URLs",
+            "In item.controller.js: user pastes URL → server fetches page → cheerio extracts title + description + OG image",
+            "Detect content type: youtube URL → type='video', twitter → type='tweet', etc.",
+            "Build React SaveItem component: input box, paste URL, shows preview card",
+            "Connect to POST /api/items endpoint",
+          ],
+        },
+        {
+          num: "03",
+          name: "AI Processing Queue",
+          est: "4-5 days",
+          color: "#F9A8D4",
+          steps: [
+            "Sign up for Upstash Redis (free) — get REDIS_URL",
+            "Install: npm i bullmq ioredis openai",
+            "In item.controller.js: after saving item to DB, add job to Bull queue",
+            "Create aiProcessor.worker.js — listens to queue, processes each job:",
+            "  Step A: Call OpenAI embeddings API with item's rawText → get vector",
+            "  Step B: Call GPT-4o-mini: 'Given this text, return 5 tags as JSON array'",
+            "  Step C: Save embedding + tags back to the Item document in MongoDB",
+            "Sign up for OpenAI API, get API key, add to .env",
+          ],
+        },
+        {
+          num: "04",
+          name: "Semantic Search",
+          est: "3-4 days",
+          color: "#FCD34D",
+          steps: [
+            "Enable MongoDB Atlas Vector Search on your cluster (free tier supports it)",
+            "Create a vector search index on Item.embedding field via Atlas UI",
+            "In search.service.js: take user query → embed it with OpenAI → get query vector",
+            "Run $vectorSearch aggregation pipeline in MongoDB → returns semantically similar items",
+            "Build Search page in React: input box → debounced call → show results with relevance",
+            "Also add regular text search on title/tags as fallback",
+          ],
+        },
+        {
+          num: "05",
+          name: "Knowledge Graph (D3.js)",
+          est: "5-6 days",
+          color: "#C4B5FD",
+          steps: [
+            "npm i d3 in client",
+            "In graph.service.js (backend): query all items for a user → build nodes (items) + edges (shared tags = connection)",
+            "GET /api/graph returns: { nodes: [{id, title, type, tags}], links: [{source, target, weight}] }",
+            "In GraphView.jsx: use useRef to attach D3 to a <svg> element",
+            "d3.forceSimulation() — this is the physics engine for the graph",
+            "Nodes = circles, colored by type (article=blue, video=red, etc.)",
+            "Edges = lines between nodes with shared tags",
+            "On node click → show item detail panel on the right",
+          ],
+        },
+        {
+          num: "06",
+          name: "Resurfacing + Collections",
+          est: "3-4 days",
+          color: "#FCA5A5",
+          steps: [
+            "Memory Resurfacing: cron job (node-cron) that runs daily, picks random items saved 7/30/90 days ago",
+            "POST /api/resurface → frontend shows 'Remember this?' cards on dashboard",
+            "Collections: CollectionSchema { name, items: [ItemRef], userId }",
+            "Users can manually add items to collections OR you auto-cluster by tag",
+            "Build Collections page — grid of collection cards, click to see items inside",
+            "Highlight System: store highlights as array in Item: highlights: [{ text, note, createdAt }]",
+          ],
+        },
+      ],
+    },
+  },
+  keyInstalls: {
+    label: "Install Commands",
+    icon: "💻",
+    color: "#6EE7B7",
+    content: {
+      groups: [
+        {
+          label: "Server Core",
+          cmd: "npm i express mongoose dotenv cors cookie-parser bcryptjs jsonwebtoken morgan",
+        },
+        {
+          label: "Scraping",
+          cmd: "npm i cheerio axios",
+        },
+        {
+          label: "Queue + Redis",
+          cmd: "npm i bullmq ioredis",
+        },
+        {
+          label: "OpenAI",
+          cmd: "npm i openai",
+        },
+        {
+          label: "Scheduler",
+          cmd: "npm i node-cron",
+        },
+        {
+          label: "Client Core",
+          cmd: "npm i axios react-router-dom @reduxjs/toolkit react-redux @tanstack/react-query",
+        },
+        {
+          label: "Graph + Viz",
+          cmd: "npm i d3",
+        },
+        {
+          label: "Styling",
+          cmd: "npm i tailwindcss @tailwindcss/vite lucide-react",
+        },
+      ],
+    },
+  },
+};
+
+const TabButton = ({ id, label, icon, color, active, onClick }) => (
+  <button
+    onClick={() => onClick(id)}
+    style={{
+      borderBottom: active ? `3px solid ${color}` : "3px solid transparent",
+      color: active ? color : "#94A3B8",
+      background: "transparent",
+      border: "none",
+      borderBottom: active ? `3px solid ${color}` : "3px solid transparent",
+      padding: "10px 16px",
+      cursor: "pointer",
+      fontSize: "13px",
+      fontWeight: active ? 700 : 500,
+      fontFamily: "'JetBrains Mono', monospace",
+      transition: "all 0.2s",
+      whiteSpace: "nowrap",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+    }}
+  >
+    {icon} {label}
+  </button>
+);
+
+const Badge = ({ text, color }) => (
+  <span
+    style={{
+      background: color + "22",
+      color: color,
+      border: `1px solid ${color}44`,
+      borderRadius: "4px",
+      padding: "2px 8px",
+      fontSize: "11px",
+      fontWeight: 600,
+      fontFamily: "'JetBrains Mono', monospace",
+    }}
+  >
+    {text}
+  </span>
+);
+
+const CodeBlock = ({ code }) => (
+  <pre
+    style={{
+      background: "#0D1117",
+      border: "1px solid #30363D",
+      borderRadius: "8px",
+      padding: "16px",
+      fontSize: "12px",
+      fontFamily: "'JetBrains Mono', monospace",
+      color: "#79C0FF",
+      overflowX: "auto",
+      margin: "8px 0",
+      lineHeight: 1.6,
+    }}
+  >
+    {code}
+  </pre>
+);
+
+const CmdBlock = ({ cmd }) => (
+  <div
+    style={{
+      background: "#0D1117",
+      border: "1px solid #30363D",
+      borderRadius: "6px",
+      padding: "10px 14px",
+      fontSize: "12px",
+      fontFamily: "'JetBrains Mono', monospace",
+      color: "#3FB950",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+    }}
+  >
+    <span style={{ color: "#8B949E" }}>$</span> {cmd}
+  </div>
+);
+
+export default function SecondBrainGuide() {
+  const [active, setActive] = useState("overview");
+  const sec = sections[active];
+
+  return (
+    <div
+      style={{
+        background: "#0D1117",
+        minHeight: "100vh",
+        fontFamily: "'JetBrains Mono', monospace",
+        color: "#E6EDF3",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "28px 28px 0",
+          borderBottom: "1px solid #21262D",
+        }}
+      >
+        <div style={{ marginBottom: "6px" }}>
+          <span
+            style={{
+              fontSize: "9px",
+              letterSpacing: "3px",
+              color: "#6EE7B7",
+              textTransform: "uppercase",
+              fontWeight: 700,
+            }}
+          >
+            MANAS // BUILD GUIDE
+          </span>
+        </div>
+        <h1
+          style={{
+            fontSize: "22px",
+            fontWeight: 800,
+            color: "#E6EDF3",
+            margin: "0 0 4px",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          🧠 Second Brain — PKM App
+        </h1>
+        <p style={{ fontSize: "13px", color: "#8B949E", margin: "0 0 20px" }}>
+          Full MERN breakdown · AI tagging · Vector search · Knowledge graph
+        </p>
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: "0", overflowX: "auto" }}>
+          {Object.entries(sections).map(([id, s]) => (
+            <TabButton
+              key={id}
+              id={id}
+              label={s.label}
+              icon={s.icon}
+              color={s.color}
+              active={active === id}
+              onClick={setActive}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "24px 28px", maxWidth: "900px" }}>
+        {/* OVERVIEW */}
+        {active === "overview" && (
+          <div>
+            <h2
+              style={{
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#6EE7B7",
+                marginBottom: "8px",
+              }}
+            >
+              {sec.content.title}
+            </h2>
+            <p
+              style={{
+                color: "#8B949E",
+                fontSize: "13px",
+                lineHeight: 1.7,
+                marginBottom: "24px",
+                maxWidth: "680px",
+              }}
+            >
+              {sec.content.description}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {sec.content.pillars.map((p) => (
+                <div
+                  key={p.name}
+                  style={{
+                    background: "#161B22",
+                    border: "1px solid #21262D",
+                    borderRadius: "10px",
+                    padding: "16px",
+                  }}
+                >
+                  <div style={{ fontSize: "22px", marginBottom: "8px" }}>{p.icon}</div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#E6EDF3", marginBottom: "4px" }}>
+                    {p.name}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8B949E", lineHeight: 1.5 }}>
+                    {p.desc}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: "24px",
+                background: "#161B22",
+                border: "1px solid #30363D",
+                borderRadius: "10px",
+                padding: "18px",
+              }}
+            >
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#FCD34D", marginBottom: "12px" }}>
+                🔄 User Flow (Mental Model)
+              </div>
+              {[
+                ["1", "User pastes URL / uses browser extension", "#6EE7B7"],
+                ["2", "Server scrapes metadata (title, description, image)", "#93C5FD"],
+                ["3", "Item saved to MongoDB", "#93C5FD"],
+                ["4", "Bull queue job created → background processing begins", "#F9A8D4"],
+                ["5", "OpenAI embeds the content → vector stored in MongoDB", "#F9A8D4"],
+                ["6", "GPT-4o-mini generates tags → stored in MongoDB", "#F9A8D4"],
+                ["7", "Graph service recalculates edges (shared tags = connection)", "#C4B5FD"],
+                ["8", "User searches → query embedded → vector search → results", "#FCD34D"],
+              ].map(([num, step, col]) => (
+                <div
+                  key={num}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <span
+                    style={{
+                      background: col + "22",
+                      color: col,
+                      borderRadius: "4px",
+                      padding: "1px 7px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      minWidth: "20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {num}
+                  </span>
+                  <span style={{ fontSize: "12px", color: "#C9D1D9", lineHeight: 1.5 }}>
+                    {step}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* STACK */}
+        {active === "stack" && (
+          <div>
+            {sec.content.categories.map((cat) => (
+              <div key={cat.name} style={{ marginBottom: "28px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "50%",
+                      background: cat.color,
+                    }}
+                  />
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: cat.color }}>
+                    {cat.name}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {cat.items.map((item) => (
+                    <div
+                      key={item.tech}
+                      style={{
+                        background: "#161B22",
+                        border: "1px solid #21262D",
+                        borderRadius: "8px",
+                        padding: "14px 16px",
+                        display: "grid",
+                        gridTemplateColumns: "160px 110px 1fr",
+                        gap: "12px",
+                        alignItems: "start",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "13px", fontWeight: 700, color: "#E6EDF3" }}>
+                          {item.tech}
+                        </div>
+                        <Badge text={item.role} color={cat.color} />
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#8B949E", lineHeight: 1.5 }}>
+                        <span style={{ color: "#FCD34D" }}>Why: </span>{item.why}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#8B949E", lineHeight: 1.5 }}>
+                        <span style={{ color: "#6EE7B7" }}>Use: </span>{item.use}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* STRUCTURE */}
+        {active === "structure" && (
+          <div>
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#93C5FD", marginBottom: "8px" }}>
+                📦 Client (React + Vite)
+              </div>
+              <CodeBlock code={sec.content.client} />
+            </div>
+            <div>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#6EE7B7", marginBottom: "8px" }}>
+                🖥️ Server (Node + Express)
+              </div>
+              <CodeBlock code={sec.content.server} />
+            </div>
+            <div
+              style={{
+                background: "#161B22",
+                border: "1px solid #F9A8D422",
+                borderRadius: "8px",
+                padding: "14px",
+                marginTop: "16px",
+              }}
+            >
+              <div style={{ fontSize: "12px", color: "#F9A8D4", fontWeight: 700, marginBottom: "6px" }}>
+                💡 Key Insight — Item Model
+              </div>
+              <div style={{ fontSize: "12px", color: "#8B949E", lineHeight: 1.6 }}>
+                The Item model is the heart of this whole app. It needs to store:
+                url, type, title, description, ogImage, rawText (scraped),
+                tags[] (AI-generated), embedding[] (vector, 1536 floats),
+                highlights[], collectionId, userId, createdAt.
+                Everything else is built around querying and processing this model.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PHASES */}
+        {active === "phases" && (
+          <div>
+            {sec.content.phases.map((phase) => (
+              <div
+                key={phase.num}
+                style={{
+                  background: "#161B22",
+                  border: `1px solid ${phase.color}33`,
+                  borderRadius: "10px",
+                  padding: "18px",
+                  marginBottom: "14px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 800,
+                        color: phase.color,
+                        background: phase.color + "22",
+                        border: `1px solid ${phase.color}44`,
+                        borderRadius: "4px",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      PHASE {phase.num}
+                    </span>
+                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#E6EDF3" }}>
+                      {phase.name}
+                    </span>
+                  </div>
+                  <Badge text={phase.est} color={phase.color} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {phase.steps.map((step, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: phase.color,
+                          fontSize: "11px",
+                          minWidth: "16px",
+                          marginTop: "1px",
+                        }}
+                      >
+                        {String(i + 1).padStart(2, "0")}.
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: step.startsWith("  ") ? "#6EE7B7" : "#C9D1D9",
+                          lineHeight: 1.5,
+                          fontFamily: step.startsWith("  ") ? "'JetBrains Mono', monospace" : "inherit",
+                        }}
+                      >
+                        {step.trim()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* INSTALL COMMANDS */}
+        {active === "keyInstalls" && (
+          <div>
+            <p style={{ fontSize: "13px", color: "#8B949E", marginBottom: "20px" }}>
+              All install commands you'll need across the full project. Run server commands in{" "}
+              <span style={{ color: "#6EE7B7" }}>/server</span>, client commands in{" "}
+              <span style={{ color: "#93C5FD" }}>/client</span>.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {sec.content.groups.map((g) => (
+                <div key={g.label}>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#8B949E",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "1px",
+                    }}
+                  >
+                    {g.label}
+                  </div>
+                  <CmdBlock cmd={g.cmd} />
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: "24px",
+                background: "#161B22",
+                border: "1px solid #21262D",
+                borderRadius: "10px",
+                padding: "18px",
+              }}
+            >
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#FCD34D", marginBottom: "14px" }}>
+                🔑 .env Files Needed
+              </div>
+              <CodeBlock
+                code={`# server/.env
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=your_secret_key
+OPENAI_API_KEY=sk-...
+REDIS_URL=rediss://...  ← from Upstash dashboard
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+PORT=5000
+
+# client/.env
+VITE_API_URL=http://localhost:5000`}
+              />
+            </div>
+
+            <div
+              style={{
+                marginTop: "16px",
+                background: "#161B22",
+                border: "1px solid #6EE7B766",
+                borderRadius: "10px",
+                padding: "18px",
+              }}
+            >
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#6EE7B7", marginBottom: "10px" }}>
+                ✅ External Services to Sign Up For (all free tiers)
+              </div>
+              {[
+                ["MongoDB Atlas", "DB + Vector Search index", "mongodb.com/atlas"],
+                ["OpenAI Platform", "Embeddings + GPT tagging", "platform.openai.com"],
+                ["Upstash", "Serverless Redis for BullMQ", "upstash.com"],
+                ["Cloudinary", "Image/file storage", "cloudinary.com"],
+                ["Render", "Deployment (you already use this)", "render.com"],
+              ].map(([name, desc, url]) => (
+                <div
+                  key={name}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "140px 1fr 140px",
+                    gap: "8px",
+                    padding: "8px 0",
+                    borderBottom: "1px solid #21262D",
+                    fontSize: "12px",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ color: "#E6EDF3", fontWeight: 600 }}>{name}</span>
+                  <span style={{ color: "#8B949E" }}>{desc}</span>
+                  <span style={{ color: "#93C5FD", fontSize: "11px" }}>{url}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
