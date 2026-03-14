@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const collectionSchema = new mongoose.Schema(
   {
@@ -31,6 +31,6 @@ const collectionSchema = new mongoose.Schema(
   }
 );
 
-const Collection = mongoose.model("Collection", collectionSchema);
+const collectionModel = mongoose.model("Collection", collectionSchema);
 
-module.exports = Collection;
+export { collectionModel };

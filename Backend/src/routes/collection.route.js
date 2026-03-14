@@ -1,6 +1,6 @@
-const { Router } = require("express");
-const { authUser } = require("../middleware/auth.middleware.js");
-const { createCollection, getAllCollections, getSingleCollection, updateCollection, deleteCollection } = require("../controllers/collection.controller.js");
+import { Router } from "express";
+import { authUser } from "../middleware/auth.middleware.js";
+import { createCollection, getAllCollections, getSingleCollection, updateCollection, deleteCollection } from "../controllers/collection.controller.js";
 
 const router = Router();
 
@@ -10,4 +10,4 @@ router.get("/single/:id", authUser, getSingleCollection);
 router.patch("/update/:id", authUser, updateCollection);
 router.delete("/delete/:id", authUser, deleteCollection);
 
-module.exports = router;
+export default router;

@@ -1,103 +1,99 @@
-const itemModel = require("../models/item.model");
-const collectionModel = require("../models/collection.model");
+import { itemModel } from "../models/item.model.js";
+import { addItemToQueue } from "../workers/queue.js";
 
 const saveItem = async (req, res) => {
-    try {
-        const { title, url, description, type } = req.body;
-        const userId = req.user.id;
+  try {
+    console.log("saveItem hit ✅", req.body);
 
-        if (!url) {
-            return res.status(400).json({
-                message: "URL is required"
-            });
-        }
+    const { url } = req.body;
+    const userId = req.user.id;
 
-        const item = await itemModel.create({
-            userId,
-            url,
-            type: type || "other",
-            title: title || "",
-            description: description || "",
-            status: "processing",
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Item saved successfully",
-            item,
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+    if (!url) {
+      return res.status(400).json({ message: "URL is required" });
     }
+
+    // save immediately — status is 'processing'
+    const item = await itemModel.create({
+      userId,
+      url,
+      status: "processing",
+    });
+
+    // add to queue — extraction + AI tags happen in background
+    // controller does NOT wait for this — responds immediately
+    // await addItemToQueue(item._id, url);
+    await addItemToQueue(item._id, url, userId);
+
+    res.status(201).json({
+      success: true,
+      message: "Item saved, processing in background",
+      item,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 const getAllItems = async (req, res) => {
-    try {
-        const userId = req.user.id;
+  try {
+    const userId = req.user.id;
 
-        const items = await itemModel.find({ userId })
-            .sort({ createdAt: -1 })
-            .populate("collectionId", "name color");
+    const items = await itemModel
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .populate("collectionId", "name color");
 
-        res.status(200).json({
-            success: true,
-            message: "Items fetched successfully",
-            count: items.length,
-            items,
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-}
+    res.status(200).json({
+      success: true,
+      message: "Items fetched successfully",
+      count: items.length,
+      items,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 const getSingleItem = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user.id;
+  try {
+    const { id } = req.params;
 
-        const item = await itemModel.findById(id)
-            .populate("collectionId", "name color")
-            .populate("relatedItems", "title url type thumbnail");
+    const item = await itemModel
+      .findById(id)
+      .populate("collectionId", "name color")
+      .populate("relatedItems", "title url type thumbnail");
 
-        if (!item) {
-            return res.status(404).json({
-                message: "Item not found"
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Item fetched successfully",
-            item,
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+    if (!item) {
+      return res.status(404).json({ message: "Item not found" });
     }
-}
+
+    if (item.userId.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Item fetched successfully",
+      item,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 const deleteItem = async (req, res) => {
   try {
-    const id = req.params.id;
-    const userId = req.user.id;
+    const { id } = req.params;
 
     const item = await itemModel.findById(id);
 
     if (!item) {
-      return res.status(404).json({ 
-        message: "Item not found" 
-    });
+      return res.status(404).json({ message: "Item not found" });
     }
 
-    if (item.userId.toString() !== userId.toString()) {
-      return res.status(403).json({ 
-        message: "Not authorized" 
-    });
+    if (item.userId.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
     }
 
     await itemModel.findByIdAndDelete(id);
@@ -106,34 +102,25 @@ const deleteItem = async (req, res) => {
       success: true,
       message: "Item deleted successfully",
     });
-
   } catch (error) {
-    res.status(500).json({ 
-        message: error.message 
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 const updateItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
 
     const item = await itemModel.findById(id);
 
     if (!item) {
-      return res.status(404).json({ 
-        message: "Item not found" 
-    });
+      return res.status(404).json({ message: "Item not found" });
     }
 
-    if (item.userId.toString() !== userId.toString()) {
-      return res.status(403).json({ 
-        message: "Not authorized" 
-    });
+    if (item.userId.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
     }
 
-    // only these fields are allowed to be updated by the user
     const allowedUpdates = ["manualTags", "collectionId", "highlights", "title"];
     const updates = {};
 
@@ -153,18 +140,9 @@ const updateItem = async (req, res) => {
       success: true,
       item: updatedItem,
     });
-
   } catch (error) {
-    res.status(500).json({ 
-        message: error.message 
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = {
-    saveItem,
-    getAllItems,
-    getSingleItem,
-    deleteItem,
-    updateItem,
-}
+export { saveItem, getAllItems, getSingleItem, deleteItem, updateItem };

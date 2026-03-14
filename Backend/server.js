@@ -1,10 +1,11 @@
-const dns = require("dns");
+import dns from "dns";
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
-const app = require("./src/app");
-const connectDB = require("./src/config/database");
+import app from "./src/app.js";
+import connectDB from "./src/config/database.js";
 
 connectDB();
 

@@ -1,6 +1,6 @@
-const { Router } = require("express");
-const { authUser } = require("../middleware/auth.middleware.js");
-const { saveItem, getAllItems, getSingleItem, updateItem, deleteItem } = require("../controllers/item.controller.js");
+import { Router } from "express";
+import { authUser } from "../middleware/auth.middleware.js";
+import { saveItem, getAllItems, getSingleItem, updateItem, deleteItem } from "../controllers/item.controller.js";
 
 const router = Router();
 
@@ -10,4 +10,4 @@ router.get("/single/:id", authUser, getSingleItem);
 router.put("/update/:id", authUser, updateItem);
 router.delete("/delete/:id", authUser, deleteItem);
 
-module.exports = router;
+export default router;

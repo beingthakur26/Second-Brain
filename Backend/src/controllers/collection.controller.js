@@ -1,5 +1,5 @@
-const collectionModel = require("../models/collection.model.js");
-const itemModel = require("../models/item.model.js");
+import { collectionModel } from "../models/collection.model.js";
+import { itemModel } from "../models/item.model.js";
 
 const createCollection = async (req, res) => {
   try {
@@ -121,10 +121,16 @@ const updateCollection = async (req, res) => {
       }
     });
 
+    // const updatedCollection = await collectionModel.findByIdAndUpdate(
+    //   id,
+    //   { $set: updates },
+    //   { new: true }
+    // );
+
     const updatedCollection = await collectionModel.findByIdAndUpdate(
       id,
       { $set: updates },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     res.status(200).json({
@@ -175,7 +181,7 @@ const deleteCollection = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
     createCollection,
     getAllCollections,
     getSingleCollection,
