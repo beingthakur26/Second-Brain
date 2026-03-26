@@ -1,6 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-
+import cors from "cors";
 import authRoutes from "./routes/auth.route.js";
 import itemRoutes from "./routes/item.route.js";
 import collectionRoutes from "./routes/collection.route.js";
@@ -11,6 +11,13 @@ const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(
+  cors({
+    origin: "http://localhost:5174", // frontend URL
+    credentials: true, // IMPORTANT (since you're using cookies)
+  })
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/item", itemRoutes);
